@@ -17,7 +17,8 @@ public class MainActivity extends AppCompatActivity {
     public int p1guess;
     public int p2guess;
     public static String player1, player2;
-    private int turn=1;
+    private static int turn=1;
+    private boolean win=false;
 
     TextView p1tv, p2tv;
     Button start_btn;
@@ -54,7 +55,19 @@ public class MainActivity extends AppCompatActivity {
         start_btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                runGame();
+              //  runGame();
+                player1= Integer.toString(generateNum());
+                player2= Integer.toString(generateNum());
+                Handler handler=new Handler();
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+
+                        while(!win) {
+                            runGame();
+                        }
+                    }
+                },1000);
             }
         });
 
@@ -63,35 +76,38 @@ public class MainActivity extends AppCompatActivity {
 
     public void makeMoveP1(){
         String guess1=Integer.toString(generateNum());
-        if(checkWin(Integer.parseInt(player2),Integer.parseInt(guess1))){
+        if(checkWin(Integer.parseInt(player1),Integer.parseInt(guess1))){
             Toast.makeText(getApplicationContext(), "Player 1 wins", Toast.LENGTH_SHORT).show();
         }
         turn=0;
-        p2tv.setText("ACTUAL: "+player2+"\n"+"Oppnenent guess: "+guess1);
+
+      //  Toast.makeText(getApplicationContext(), "Turn is "+Integer.toString(turn), Toast.LENGTH_SHORT).show();
+        p2tv.setText("ACTUAL: "+player1+"\n"+"Oppnenent guess: "+guess1);
     }
 
 
     public void makeMoveP2(){
         String guess2=Integer.toString(generateNum());
-        if(checkWin(Integer.parseInt(player1),Integer.parseInt(guess2))){
+        if(checkWin(Integer.parseInt(player2),Integer.parseInt(guess2))){
             Toast.makeText(getApplicationContext(), "Player 2 wins", Toast.LENGTH_SHORT).show();
         }
         turn=1;
-        p2tv.setText("ACTUAL: "+player1+"\n"+"Oppnenent guess: "+guess2);
+      //  Toast.makeText(getApplicationContext(), "Turn is "+Integer.toString(turn), Toast.LENGTH_SHORT).show();
+
+        p1tv.setText("ACTUAL: "+player2+"\n"+"Oppnenent guess: "+guess2);
     }
 
 
     public void runGame(){
 
-        player1= Integer.toString(generateNum());
-        player2= Integer.toString(generateNum());
 
-        if(turn==0){
-            makeMoveP1();
-        }
-        if (turn==1){
-            makeMoveP2();
-        }
+            if (turn == 0) {
+                makeMoveP2();
+                //  worker1Thread.run();
+            } else if (turn == 1) {
+                makeMoveP1();
+            }
+
 
     }
 
@@ -99,6 +115,7 @@ public class MainActivity extends AppCompatActivity {
     public boolean checkWin(int a, int b){
 
         if(a==b){
+            win=true;
             return true;
         }
 
@@ -167,8 +184,10 @@ public class MainActivity extends AppCompatActivity {
         }
 
         public void run(){
-            Looper.prepare();
-
+            if (Looper.myLooper() == null)
+            {
+                Looper.prepare();
+            }
             worker1Handler = new Handler(){
                 @Override
                 public void handleMessage(Message msg){
@@ -180,7 +199,13 @@ public class MainActivity extends AppCompatActivity {
 
                                           catch (InterruptedException e) {}
 
-                                    runGame();
+
+                                    if(turn==0){
+                                        makeMoveP2();
+                                     }
+                                    else if (turn==1){
+                                        makeMoveP1();
+                                    }
                                 }
 
 
@@ -218,7 +243,14 @@ public class MainActivity extends AppCompatActivity {
                                     try { Thread.sleep(1000); }
                                     catch (InterruptedException e) {}
 
-                                    runGame();
+
+                                    if(turn==0){
+                                        makeMoveP2();
+                                   //     worker1Thread.run();
+                                    }
+                                    else if (turn==1){
+                                        makeMoveP1();
+                                    }
 
                                 }
                             });
