@@ -26,9 +26,9 @@ public class MainActivity extends AppCompatActivity {
 
 
     //threads and handlers
-    public HandlerUI handlerUI;
-    public Worker1Thread worker1Thread;
-    public Worker2Thread worker2Thread;
+    public UIT UIT;
+    public ThreadPlayer1 ThreadPlayer1;
+    public ThreadPlayer2 ThreadPlayer2;
 
     public static final int WAIT = 1;               //used by worker threads
     public static final int MAKE_MOVE = 2;          //used by worker threads
@@ -40,51 +40,49 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-    private class HandlerUI extends Handler {
+    private class UIT extends Handler {
         @Override
         public void handleMessage(Message msg) {
             int what=msg.what;
-            Message m;
 
-            switch (what) {
-                //updates the game board, and checks if the game needs to be continued (if there is a winner or not)
-                case UPDATE_BOARD:
-                    boolean winner = checkWin();
+            if(what==6){
+                boolean winner = checkWin();
 
-                    //continue playing the game if the game is no worker has won
-                    if(winner == false){
-                        m = handlerUI.obtainMessage(NEXT_MOVE);
-                        handlerUI.sendMessage(m);
+                //continue playing the game if the game is no worker has won
+                if(winner == false){
+                    msg = UIT.obtainMessage(NEXT_MOVE);
+                    UIT.sendMessage(msg);
 
-                    }
-                    //if either has one, stop both threads and display winner
-                    else if(winner =true){
-                        //gameInProgress = false; #############################################
-                        m = worker1Thread.worker1Handler.obtainMessage(GAME_OVER);
-                        worker1Thread.worker1Handler.sendMessage(m);
-                        m = worker2Thread.worker2Handler.obtainMessage(GAME_OVER);
-                        worker2Thread.worker2Handler.sendMessage(m);
-                    }
-
-                    break;
+                }
+                //if either has one, stop both threads and display winner
+                else if(winner =true){
+                    //gameInProgress = false; #############################################
+                    msg = ThreadPlayer1.hp1.obtainMessage(GAME_OVER);
+                    ThreadPlayer1.hp1.sendMessage(msg);
+                    msg = ThreadPlayer2.hp2.obtainMessage(GAME_OVER);
+                    ThreadPlayer2.hp2.sendMessage(msg);
+                }
 
 
-                case NEXT_MOVE:
 
-                    if(turn  == 0){
-                        m = worker1Thread.worker1Handler.obtainMessage(MAKE_MOVE);
-                        worker1Thread.worker1Handler.sendMessage(m);
-                         p2tv.setText("ACTUAL: "+player2+"\n"+"Oppnenent guess: "+guess1);
-
-                    }
-                    else if(turn  == 1){
-                        m = worker2Thread.worker2Handler.obtainMessage(MAKE_MOVE);
-                        worker2Thread.worker2Handler.sendMessage(m);
-                        p1tv.setText("ACTUAL: "+player1+"\n"+"Oppnenent guess: "+guess2);
-
-                    }
-                    break;
             }
+
+            else if(what==7){
+                if(turn  == 0){
+                    msg = ThreadPlayer1.hp1.obtainMessage(MAKE_MOVE);
+                    ThreadPlayer1.hp1.sendMessage(msg);
+                    p2tv.setText("ACTUAL: "+player2+"\n"+"Oppnenent guess: "+guess1);
+
+                }
+                else if(turn  == 1){
+                    msg = ThreadPlayer2.hp2.obtainMessage(MAKE_MOVE);
+                    ThreadPlayer2.hp2.sendMessage(msg);
+                    p1tv.setText("ACTUAL: "+player1+"\n"+"Oppnenent guess: "+guess2);
+
+                }
+            }
+
+     
 
         }
     }
@@ -103,11 +101,11 @@ public class MainActivity extends AppCompatActivity {
         p2tv=findViewById(R.id.p2tv);
         start_btn=findViewById(R.id.start_btn);
 
-        handlerUI=new HandlerUI();
-        worker1Thread = new Worker1Thread(handlerUI);
-        worker2Thread = new Worker2Thread(handlerUI);
-        worker1Thread.start();
-        worker2Thread.start();
+        UIT=new UIT();
+        ThreadPlayer1 = new ThreadPlayer1(UIT);
+        ThreadPlayer2 = new ThreadPlayer2(UIT);
+        ThreadPlayer1.start();
+        ThreadPlayer2.start();
 
         start_btn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -141,12 +139,9 @@ public class MainActivity extends AppCompatActivity {
 
 
     public void runGame(){
-
-
-        Message m = worker1Thread.worker1Handler.obtainMessage(MAKE_MOVE);
-        //send message to worker1 thread, and have worker1 handler take care of message
-        worker1Thread.worker1Handler.sendMessage(m);
-
+        
+        Message msg = ThreadPlayer1.hp1.obtainMessage(MAKE_MOVE);
+        ThreadPlayer1.hp1.sendMessage(msg);
 
     }
 
@@ -214,24 +209,24 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-    private class Worker1Thread extends Thread{
-        public Handler worker1Handler;
-        private HandlerUI callbackHandler;
+    private class ThreadPlayer1 extends Thread{
+        public Handler hp1;
+        private UIT cbh;
 
-        public Worker1Thread(HandlerUI h){
-            callbackHandler = h;
+        public ThreadPlayer1(UIT h){
+            cbh = h;
         }//end constructor
 
         public void run(){
             Looper.prepare();
 
-            worker1Handler = new Handler(){
+            hp1 = new Handler(){
                 @Override
                 public void handleMessage(Message msg){
                     int what = msg.what ;
                     switch (what) {
                         case WAIT:
-                            worker1Handler.post(new Runnable() {
+                            hp1.post(new Runnable() {
                                 @Override
                                 public void run() {
                                     try { Thread.sleep(1000); }
@@ -239,13 +234,13 @@ public class MainActivity extends AppCompatActivity {
 
                                     //sending message back to UI handler
                                     Message message;
-                                    message = callbackHandler.obtainMessage(DONE_WAITING);
-                                    callbackHandler.sendMessage(message);
+                                    message = cbh.obtainMessage(DONE_WAITING);
+                                    cbh.sendMessage(message);
                                 }
                             });
 
                         case MAKE_MOVE:
-                            worker1Handler.post(new Runnable() {
+                            hp1.post(new Runnable() {
                                 @Override
                                 public void run() {
                                     try { Thread.sleep(1000); }
@@ -256,14 +251,14 @@ public class MainActivity extends AppCompatActivity {
 
                                     //sending message back to UI handler
                                     Message message;
-                                    message = callbackHandler.obtainMessage(UPDATE_BOARD);
-                                    callbackHandler.sendMessage(message);
+                                    message = cbh.obtainMessage(UPDATE_BOARD);
+                                    cbh.sendMessage(message);
                                 }
                             });
                             break;
 
                         case GAME_OVER:
-                            worker1Handler.post(new Runnable() {
+                            hp1.post(new Runnable() {
                                 @Override
                                 public void run() {
                                     System.out.println("Game over");
@@ -282,28 +277,28 @@ public class MainActivity extends AppCompatActivity {
 
             Looper.loop();
         }//end run()
-    }//end Worker1Thread class
+    }//end ThreadPlayer1 class
 
 
 
-    private class Worker2Thread extends Thread{
-        public Handler worker2Handler;
-        private HandlerUI callbackHandler;
+    private class ThreadPlayer2 extends Thread{
+        public Handler hp2;
+        private UIT cbh;
 
-        public Worker2Thread(HandlerUI h){
-            callbackHandler = h;
+        public ThreadPlayer2(UIT h){
+            cbh = h;
         }//end constructor
 
         public void run(){
             Looper.prepare();
 
-            worker2Handler = new Handler(){
+            hp2 = new Handler(){
                 @Override
                 public void handleMessage(Message msg){
                     int what = msg.what ;
                     switch (what) {
                         case WAIT:
-                            worker2Handler.post(new Runnable() {
+                            hp2.post(new Runnable() {
                                 @Override
                                 public void run() {
                                     try { Thread.sleep(1000); }
@@ -311,13 +306,13 @@ public class MainActivity extends AppCompatActivity {
 
                                     //sending message back to UI handler
                                     Message message;
-                                    message = callbackHandler.obtainMessage(DONE_WAITING);
-                                    callbackHandler.sendMessage(message);
+                                    message = cbh.obtainMessage(DONE_WAITING);
+                                    cbh.sendMessage(message);
                                 }
                             });
 
                         case MAKE_MOVE:
-                            worker2Handler.post(new Runnable() {
+                            hp2.post(new Runnable() {
                                 @Override
                                 public void run() {
                                     try { Thread.sleep(1000); }
@@ -327,14 +322,14 @@ public class MainActivity extends AppCompatActivity {
 
                                     //sending message back to UI handler
                                     Message message;
-                                    message = callbackHandler.obtainMessage(UPDATE_BOARD);
-                                    callbackHandler.sendMessage(message);
+                                    message = cbh.obtainMessage(UPDATE_BOARD);
+                                    cbh.sendMessage(message);
                                 }
                             });
                             break;
 
                         case GAME_OVER:
-                            worker2Handler.post(new Runnable() {
+                            hp2.post(new Runnable() {
                                 @Override
                                 public void run() {
                                     System.out.println("Game over");
@@ -350,7 +345,7 @@ public class MainActivity extends AppCompatActivity {
 
             Looper.loop();
         }//end run()
-    }//end Worker2Thread class
+    }//end ThreadPlayer2 class
 
 
 
